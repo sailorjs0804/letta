@@ -73,6 +73,7 @@ class ProviderType(str, Enum):
     vllm = "vllm"
     sglang = "sglang"
     openrouter = "openrouter"
+    orcarouter = "orcarouter"
     xai = "xai"
     zai = "zai"
     zai_coding = "zai_coding"

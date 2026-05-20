@@ -717,7 +717,8 @@ class ProviderManager:
                         enabled=True,
                         model_endpoint_type=llm_config.model_endpoint_type,
                         max_context_window=llm_config.context_window,
-                        supports_token_streaming=llm_config.model_endpoint_type in ["openai", "anthropic", "deepseek", "openrouter"],
+                        supports_token_streaming=llm_config.model_endpoint_type
+                        in ["openai", "anthropic", "deepseek", "openrouter", "orcarouter"],
                         supports_tool_calling=True,  # Assume true for LLMs for now
                     )
 

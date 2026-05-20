@@ -167,8 +167,8 @@ def create(
         printd("unsetting function_call because functions is None")
         function_call = None
 
-    # openai and openrouter (OpenAI-compatible)
-    if llm_config.model_endpoint_type in ["openai", "openrouter"]:
+    # openai, openrouter, and orcarouter (OpenAI-compatible)
+    if llm_config.model_endpoint_type in ["openai", "openrouter", "orcarouter"]:
         if model_settings.openai_api_key is None and llm_config.model_endpoint == "https://api.openai.com/v1":
             # only is a problem if we are *not* using an openai proxy
             raise LettaConfigurationError(message="OpenAI key is missing from letta config file", missing_fields=["openai_api_key"])
@@ -183,9 +183,15 @@ def create(
             is_openrouter = (llm_config.model_endpoint and "openrouter.ai" in llm_config.model_endpoint) or (
                 llm_config.provider_name == "openrouter"
             )
+            # Prefer OrcaRouter key when targeting OrcaRouter
+            is_orcarouter = (llm_config.model_endpoint and "orcarouter.ai" in llm_config.model_endpoint) or (
+                llm_config.provider_name == "orcarouter"
+            )
             if is_openrouter:
                 api_key = model_settings.openrouter_api_key or os.environ.get("OPENROUTER_API_KEY")
-            if not is_openrouter or not api_key:
+            elif is_orcarouter:
+                api_key = model_settings.orcarouter_api_key or os.environ.get("ORCAROUTER_API_KEY")
+            if (not is_openrouter and not is_orcarouter) or not api_key:
                 api_key = model_settings.openai_api_key or os.environ.get("OPENAI_API_KEY")
             # the openai python client requires some API key string
             api_key = api_key or "DUMMY_API_KEY"

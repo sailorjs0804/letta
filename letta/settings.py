@@ -147,6 +147,11 @@ class ModelSettings(BaseSettings):
     openrouter_title: Optional[str] = None  # e.g., your app name
     openrouter_handle_base: Optional[str] = None
 
+    # OrcaRouter
+    # See https://docs.orcarouter.ai/introduction for details
+    orcarouter_api_key: Optional[str] = None
+    orcarouter_base_url: str = "https://api.orcarouter.ai/v1"
+
     # deepseek
     deepseek_api_key: Optional[str] = None
 

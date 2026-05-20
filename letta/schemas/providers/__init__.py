@@ -18,6 +18,7 @@ from .mistral import MistralProvider
 from .ollama import OllamaProvider
 from .openai import OpenAIProvider
 from .openrouter import OpenRouterProvider
+from .orcarouter import OrcaRouterProvider
 from .sglang import SGLangProvider
 from .together import TogetherProvider
 from .vllm import VLLMProvider
@@ -42,6 +43,7 @@ __all__ = [
     "OllamaProvider",
     "OpenAIProvider",
     "OpenRouterProvider",
+    "OrcaRouterProvider",
     "Provider",
     "ProviderBase",
     "ProviderCheck",

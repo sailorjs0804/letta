@@ -61,7 +61,7 @@ async def openai_get_model_list_async(
     headers = {"Content-Type": "application/json"}
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
-    if "openrouter.ai" in url:
+    if "openrouter.ai" in url or "orcarouter.ai" in url:
         if model_settings.openrouter_referer:
             headers["HTTP-Referer"] = model_settings.openrouter_referer
         if model_settings.openrouter_title:

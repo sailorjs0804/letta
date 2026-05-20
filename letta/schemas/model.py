@@ -506,6 +506,23 @@ class OpenRouterModelSettings(ModelSettings):
         }
 
 
+class OrcaRouterModelSettings(ModelSettings):
+    """OrcaRouter model configuration (OpenAI-compatible)."""
+
+    provider_type: Literal[ProviderType.orcarouter] = Field(ProviderType.orcarouter, description="The type of the provider.")
+    temperature: float = Field(0.7, description="The temperature of the model.")
+    response_format: Optional[ResponseFormatUnion] = Field(None, description="The response format for the model.")
+
+    def _to_legacy_config_params(self) -> dict:
+        return {
+            "temperature": self.temperature,
+            "max_tokens": self.max_output_tokens,
+            "response_format": self.response_format,
+            "parallel_tool_calls": self.parallel_tool_calls,
+            "strict": False,  # OrcaRouter does not support strict mode
+        }
+
+
 class ChatGPTOAuthReasoning(BaseModel):
     """Reasoning configuration for ChatGPT OAuth models (GPT-5.x, o-series)."""
 

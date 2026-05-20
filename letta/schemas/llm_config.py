@@ -56,6 +56,7 @@ class LLMConfig(BaseModel):
         "baseten",
         "fireworks",
         "openrouter",
+        "orcarouter",
         "chatgpt_oauth",
     ] = Field(..., description="The endpoint type for the model.")
     model_endpoint: Optional[str] = Field(None, description="The endpoint for the model.")
@@ -466,6 +467,13 @@ class LLMConfig(BaseModel):
                 max_output_tokens=self.max_tokens or 4096,
                 temperature=self.temperature,
             )
+        elif self.model_endpoint_type == "orcarouter":
+            from letta.schemas.model import OrcaRouterModelSettings
+
+            return OrcaRouterModelSettings(
+                max_output_tokens=self.max_tokens or 4096,
+                temperature=self.temperature,
+            )
         elif self.model_endpoint_type == "chatgpt_oauth":
             return ChatGPTOAuthModelSettings(
                 max_output_tokens=self.max_tokens or 4096,
@@ -541,7 +549,7 @@ class LLMConfig(BaseModel):
         - moonshotai/kimi-k2-thinking
         - deepseek/deepseek-r1
         """
-        if config.model_endpoint_type != "openrouter":
+        if config.model_endpoint_type not in ("openrouter", "orcarouter"):
             return False
         model = config.model.lower()
         # OpenAI reasoning models

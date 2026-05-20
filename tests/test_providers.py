@@ -14,6 +14,7 @@ from letta.schemas.providers import (
     MiniMaxProvider,
     OllamaProvider,
     OpenAIProvider,
+    OrcaRouterProvider,
     SGLangProvider,
     TogetherProvider,
     VLLMProvider,
@@ -124,6 +125,24 @@ async def test_zai():
     models = await provider.list_llm_models_async()
     assert len(models) > 0
     assert models[0].handle == f"{provider.name}/{models[0].model}"
+
+
+@pytest.mark.skipif(model_settings.orcarouter_api_key is None, reason="Only run if ORCAROUTER_API_KEY is set.")
+@pytest.mark.asyncio
+async def test_orcarouter():
+    provider = OrcaRouterProvider(
+        name="orcarouter",
+        api_key_enc=Secret.from_plaintext(model_settings.orcarouter_api_key),
+    )
+    models = await provider.list_llm_models_async()
+    assert len(models) > 0
+    assert models[0].handle == f"{provider.name}/{models[0].model}"
+    assert models[0].model_endpoint_type == "orcarouter"
+    assert models[0].provider_name == "orcarouter"
+
+    embedding_models = await provider.list_embedding_models_async()
+    if embedding_models:
+        assert embedding_models[0].handle == f"{provider.name}/{embedding_models[0].embedding_model}"
 
 
 @pytest.mark.skipif(model_settings.groq_api_key is None, reason="Only run if GROQ_API_KEY is set.")

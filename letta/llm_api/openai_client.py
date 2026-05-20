@@ -202,6 +202,16 @@ class OpenAIClient(LLMClientBase):
             if headers:
                 kwargs["default_headers"] = headers
 
+        # OrcaRouter-specific overrides: use OrcaRouter key and optional headers
+        is_orcarouter = (llm_config.model_endpoint and "orcarouter.ai" in llm_config.model_endpoint) or (
+            llm_config.provider_name == "orcarouter"
+        )
+        if is_orcarouter:
+            if not has_byok_key:
+                or_key = model_settings.orcarouter_api_key or os.environ.get("ORCAROUTER_API_KEY")
+                if or_key:
+                    kwargs["api_key"] = or_key
+
         # The OpenAI client requires some API key value
         kwargs["api_key"] = kwargs.get("api_key") or "DUMMY_API_KEY"
 
@@ -239,6 +249,15 @@ class OpenAIClient(LLMClientBase):
             if headers:
                 kwargs["default_headers"] = headers
 
+        is_orcarouter = (llm_config.model_endpoint and "orcarouter.ai" in llm_config.model_endpoint) or (
+            llm_config.provider_name == "orcarouter"
+        )
+        if is_orcarouter:
+            if not has_byok_key:
+                or_key = model_settings.orcarouter_api_key or os.environ.get("ORCAROUTER_API_KEY")
+                if or_key:
+                    kwargs["api_key"] = or_key
+
         kwargs["api_key"] = kwargs.get("api_key") or "DUMMY_API_KEY"
 
         return kwargs
@@ -251,6 +270,9 @@ class OpenAIClient(LLMClientBase):
 
     def _is_openrouter_request(self, llm_config: LLMConfig) -> bool:
         return (llm_config.model_endpoint and "openrouter.ai" in llm_config.model_endpoint) or (llm_config.provider_name == "openrouter")
+
+    def _is_orcarouter_request(self, llm_config: LLMConfig) -> bool:
+        return (llm_config.model_endpoint and "orcarouter.ai" in llm_config.model_endpoint) or (llm_config.provider_name == "orcarouter")
 
     @staticmethod
     def _extract_openrouter_provider(e: Exception) -> str | None:
@@ -514,7 +536,8 @@ class OpenAIClient(LLMClientBase):
         Constructs a request object in the expected data format for the OpenAI API.
         """
         # Shortcut for GPT-5 to use Responses API, but only for letta_v1_agent
-        if use_responses_api(llm_config) and agent_type == AgentType.letta_v1_agent:
+        # OrcaRouter doesn't support Responses API, so skip it
+        if use_responses_api(llm_config) and agent_type == AgentType.letta_v1_agent and not self._is_orcarouter_request(llm_config):
             return self.build_request_data_responses(
                 agent_type=agent_type,
                 messages=messages,
@@ -567,7 +590,8 @@ class OpenAIClient(LLMClientBase):
 
         # TODO: we may need to extend this to more models using proxy?
         is_openrouter = self._is_openrouter_request(llm_config)
-        if is_openrouter:
+        is_orcarouter = self._is_orcarouter_request(llm_config)
+        if is_openrouter or is_orcarouter:
             try:
                 model = llm_config.handle.split("/", 1)[-1]
             except Exception:
@@ -580,9 +604,9 @@ class OpenAIClient(LLMClientBase):
         tool_choice = None
         if tools:  # only set tool_choice if tools exist
             if force_tool_call is not None:
-                # OpenRouter proxies to providers that may not support object-format tool_choice
+                # OpenRouter/OrcaRouter proxies to providers that may not support object-format tool_choice
                 # Use "required" instead which achieves similar effect
-                if is_openrouter:
+                if is_openrouter or is_orcarouter:
                     tool_choice = "required"
                 else:
                     tool_choice = ToolFunctionChoice(type="function", function=ToolFunctionChoiceFunctionCall(name=force_tool_call))
@@ -716,8 +740,8 @@ class OpenAIClient(LLMClientBase):
                     "chat_template_args": {"enable_thinking": True},
                 }
 
-        # Add OpenRouter reasoning configuration via extra_body
-        if is_openrouter and llm_config.enable_reasoner:
+        # Add OpenRouter/OrcaRouter reasoning configuration via extra_body
+        if (is_openrouter or is_orcarouter) and llm_config.enable_reasoner:
             reasoning_config = {}
             if llm_config.reasoning_effort:
                 reasoning_config["effort"] = llm_config.reasoning_effort
@@ -727,9 +751,9 @@ class OpenAIClient(LLMClientBase):
                 reasoning_config = {"enabled": True}
             request_data["extra_body"] = {"reasoning": reasoning_config}
 
-        # Add OpenRouter provider preferences for GLM-5 auto mode
+        # Add OpenRouter/OrcaRouter provider preferences for GLM-5 auto mode
         # Exclude low-quality (fp4), degraded, tool-unsupported, and high-error-rate providers
-        if is_openrouter and (model or "").lower().endswith("glm-5"):
+        if (is_openrouter or is_orcarouter) and (model or "").lower().endswith("glm-5"):
             existing_extra = request_data.get("extra_body", {})
             existing_extra["provider"] = {
                 "ignore": ["deepinfra/fp4", "ambient/fp8", "io-net/fp8", "phala", "siliconflow/fp8"],
@@ -1224,6 +1248,16 @@ class OpenAIClient(LLMClientBase):
             or_provider = self._extract_openrouter_provider(e)
             logger.warning(
                 f"[OPENROUTER_PROVIDER_ERROR] handle={llm_config.handle} "
+                f"upstream_provider={or_provider} error_type={type(e).__name__} "
+                f"status={getattr(e, 'status_code', None)} "
+                f"message={str(e)[:500]}"
+            )
+
+        # Log OrcaRouter upstream provider errors with searchable tag
+        if llm_config and self._is_orcarouter_request(llm_config):
+            or_provider = self._extract_openrouter_provider(e)
+            logger.warning(
+                f"[ORCAROUTER_PROVIDER_ERROR] handle={llm_config.handle} "
                 f"upstream_provider={or_provider} error_type={type(e).__name__} "
                 f"status={getattr(e, 'status_code', None)} "
                 f"message={str(e)[:500]}"

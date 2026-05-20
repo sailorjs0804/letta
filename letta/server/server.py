@@ -60,6 +60,7 @@ from letta.schemas.providers import (
     OllamaProvider,
     OpenAIProvider,
     OpenRouterProvider,
+    OrcaRouterProvider,
     Provider,
     SGLangProvider,
     TogetherProvider,
@@ -368,6 +369,15 @@ class SyncServer(object):
                 OpenRouterProvider(
                     name=model_settings.openrouter_handle_base if model_settings.openrouter_handle_base else "openrouter",
                     api_key_enc=Secret.from_plaintext(model_settings.openrouter_api_key),
+                )
+            )
+
+        if model_settings.orcarouter_api_key:
+            self._enabled_providers.append(
+                OrcaRouterProvider(
+                    name="orcarouter",
+                    api_key_enc=Secret.from_plaintext(model_settings.orcarouter_api_key),
+                    base_url=model_settings.orcarouter_base_url,
                 )
             )
 
